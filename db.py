@@ -1,4 +1,8 @@
 import json
+import socket
+import threading
+import signal
+import sys
 
 class JSONDatabase:
     def __init__(self, filename="data.json"):
@@ -24,22 +28,14 @@ class JSONDatabase:
     def get_data(self, key):
         data = self.load_data()
         return data.get(key, None)
-        
-db = JSONDatabase()
-
-import socket
-import threading
-import signal
-import sys
 
 class TCPServer:
     def __init__(self, port, message_handler):
-        self.ip = self.get_local_ip()
         self.port = port
         self.server_socket = None
         self.message_handler = message_handler
         self.clients = []
-        print(f"TCP Sunucu {self.ip}:{self.port} adresinde çalışıyor...")
+        print(f"TCP Sunucu 127.0.0.1:{self.port} adresinde çalışıyor...")
 
     def start(self):
         self.open_server_socket()
@@ -62,13 +58,13 @@ class TCPServer:
     def open_server_socket(self):
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) # Portu hızla yeniden kullanmak için
-        self.server_socket.bind((self.ip, self.port))
+        self.server_socket.bind(("127.0.0.1", self.port))
         self.server_socket.listen(5)
 
     def close_server_socket(self):
         if self.server_socket:
             self.server_socket.close()
-            print(f"TCP Sunucu {self.ip}:{self.port} adresinde durduruldu.")
+            print(f"TCP Sunucu 127.0.0.1:{self.port} adresinde durduruldu.")
 
     def handle_client(self, client_socket):
         while True:
@@ -90,17 +86,6 @@ class TCPServer:
             except Exception as e:
                 print(f"Hata: {e}")
 
-    def get_local_ip(self):
-        try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            sock.connect(("8.8.8.8", 80))
-            ip = sock.getsockname()[0]
-            sock.close()
-            return ip
-        except Exception as e:
-            print(f"IP adresi alınamadı: {e}")
-            return "127.0.0.1"
-            
 def message_handler(message):
     data = message.strip()[1:-1].split(",")
     parsed_data = [item.strip() for item in data]
@@ -112,6 +97,7 @@ def message_handler(message):
             server.send_to_all( "(" + getted_data + ")")
         else:
             server.send_to_all( "(NULL)") 
-        
-server = TCPServer(12343, message_handler)
+
+db = JSONDatabase()
+server = TCPServer(4040, message_handler)
 server.start()
