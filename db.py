@@ -107,7 +107,7 @@ def message_handler(message):
     if parsed_data[0] == "SET":
         db.set_data(parsed_data[1], parsed_data[2])
     if parsed_data[0] == "GET":
-        getted_data = db.get_data(parsed_data[1];
+        getted_data = db.get_data(parsed_data[1]);
         if(getted_data) server.send_to_all( "(" + getted_data + ")")
         else server.send_to_all( "(NULL)") 
         
