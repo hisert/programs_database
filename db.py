@@ -77,8 +77,6 @@ class TCPServer:
                 if not data:
                     break
                 self.message_handler(data.decode())
-                processed_data = data.decode().upper()
-                self.send_to_all(processed_data)  # Tüm bağlı istemcilere işlenmiş veriyi gönder
             except Exception as e:
                 print(f"Hata: {e}")
                 break
@@ -108,7 +106,6 @@ def message_handler(message):
     parsed_data = [item.strip() for item in data]
     if parsed_data[0] == "SET":
         db.set_data(parsed_data[1], parsed_data[2])
-        server.send_to_all("SETTED")
     if parsed_data[0] == "GET":
         server.send_to_all(db.get_data(parsed_data[1]))
         
