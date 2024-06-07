@@ -61,6 +61,7 @@ class TCPServer:
 
     def open_server_socket(self):
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) # Portu hızla yeniden kullanmak için
         self.server_socket.bind((self.ip, self.port))
         self.server_socket.listen(5)
 
@@ -111,6 +112,5 @@ def message_handler(message):
     if parsed_data[0] == "GET":
         server.send_to_all(db.get_data(parsed_data[1]))
         
-server = TCPServer(12344, message_handler)
+server = TCPServer(12343, message_handler)
 server.start()
-
