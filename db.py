@@ -79,3 +79,16 @@ class TCPServer:
         except Exception as e:
             print(f"IP adresi alınamadı: {e}")
             return "127.0.0.1"
+
+def message_handler(message):
+    data = message.strip()[1:-1].split(",")
+    print("Parse edilen veriler:")
+    for item in data:
+        print(item.strip())
+
+def main():
+    server = TCPServer(12345, message_handler)
+    server.start()
+
+if __name__ == "__main__":
+    main()
