@@ -24,6 +24,8 @@ class JSONDatabase:
     def get_data(self, key):
         data = self.load_data()
         return data.get(key, None)
+        
+db = JSONDatabase()
 
 import socket
 import threading
@@ -99,16 +101,16 @@ class TCPServer:
         except Exception as e:
             print(f"IP adresi alınamadı: {e}")
             return "127.0.0.1"
-
+            
 def message_handler(message):
     data = message.strip()[1:-1].split(",")
-    print("Parse edilen veriler:")
-    for item in data:
-        print(item.strip())
+    parsed_data = [item.strip() for item in data]
+    if parsed_data[0] == "SET":
+        db.set_data(parsed_data[1], parsed_data[2])
+        server.send_to_all("SETTED")
+    if parsed_data[0] == "GET":
+        server.send_to_all(db.get_data(parsed_data[1]))
+        
+server = TCPServer(12344, message_handler)
+server.start()
 
-def main():
-    server = TCPServer(12344, message_handler)
-    server.start()
-
-if __name__ == "__main__":
-    main()
