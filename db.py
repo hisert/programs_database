@@ -27,25 +27,45 @@ class JSONDatabase:
 
 import socket
 import threading
+import signal
+import sys
 
 class TCPServer:
     def __init__(self, port, message_handler):
         self.ip = self.get_local_ip()
         self.port = port
-        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server_socket.bind((self.ip, self.port))
-        self.server_socket.listen(5)
+        self.server_socket = None
         self.message_handler = message_handler
         self.clients = []
         print(f"TCP Sunucu {self.ip}:{self.port} adresinde çalışıyor...")
 
     def start(self):
+        self.open_server_socket()
+        signal.signal(signal.SIGINT, self.signal_handler)  # Ctrl+C sinyalini yakala
         while True:
             client_socket, address = self.server_socket.accept()
             print(f"Bağlantı alındı: {address}")
             self.clients.append(client_socket)
             client_thread = threading.Thread(target=self.handle_client, args=(client_socket,))
             client_thread.start()
+
+    def stop(self):
+        self.close_server_socket()
+        sys.exit(0)
+
+    def signal_handler(self, sig, frame):
+        print("\nCtrl+C algılandı. Sunucu durduruluyor...")
+        self.stop()
+
+    def open_server_socket(self):
+        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server_socket.bind((self.ip, self.port))
+        self.server_socket.listen(5)
+
+    def close_server_socket(self):
+        if self.server_socket:
+            self.server_socket.close()
+            print(f"TCP Sunucu {self.ip}:{self.port} adresinde durduruldu.")
 
     def handle_client(self, client_socket):
         while True:
@@ -80,14 +100,8 @@ class TCPServer:
             print(f"IP adresi alınamadı: {e}")
             return "127.0.0.1"
 
-def message_handler(message):
-    data = message.strip()[1:-1].split(",")
-    print("Parse edilen veriler:")
-    for item in data:
-        print(item.strip())
-
 def main():
-    server = TCPServer(12345, message_handler)
+    server = TCPServer(12344, message_handler)
     server.start()
 
 if __name__ == "__main__":
