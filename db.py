@@ -102,4 +102,15 @@ class TCPServer:
 def message_handler(message):
     data = message.strip()[1:-1].split(",")
     parsed_data = [item.strip() for item in data]
-    if parsed_dat
+    if parsed_data[0] == "SET":
+        db.set_data(parsed_data[1], parsed_data[2])
+    elif parsed_data[0] == "GET":
+        getted_data = db.get_data(parsed_data[1])
+        if getted_data:
+            server.send_to_all(f"({getted_data})")
+        else:
+            server.send_to_all("(NULL)")
+
+db = JSONDatabase()
+server = TCPServer(4041, message_handler)
+server.start()
