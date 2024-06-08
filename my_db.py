@@ -1,44 +1,40 @@
-import json
+import sqlite3
 import socket
 import threading
 import signal
 import sys
-import os
 
-class JSONDatabase:
-    def __init__(self, filename="data.json"):
-        self.filename = filename
-        self.lock = threading.Lock()  # Thread güvenliği için kilit
+class SQLiteDatabase:
+    def __init__(self, db_name="data.db"):
+        self.db_name = db_name
+        self.connection = self.create_connection()
+        self.create_table()
 
-    def load_data(self):
-        try:
-            with open(self.filename, "r") as file:
-                return json.load(file)
-        except FileNotFoundError:
-            self.save_data({})
-            return {}
+    def create_connection(self):
+        conn = sqlite3.connect(self.db_name, check_same_thread=False)
+        return conn
 
-    def save_data(self, data):
-        with open(self.filename, "w") as file:
-            json.dump(data, file, indent=4)
+    def create_table(self):
+        with self.connection:
+            self.connection.execute(
+                "CREATE TABLE IF NOT EXISTS data (key TEXT PRIMARY KEY, value TEXT)"
+            )
 
     def set_data(self, key, value):
-        with self.lock:
-            data = self.load_data()
-            data[key] = value
-            self.save_data(data)
+        with self.connection:
+            self.connection.execute(
+                "REPLACE INTO data (key, value) VALUES (?, ?)", (key, value)
+            )
 
     def get_data(self, key):
-        with self.lock:
-            data = self.load_data()
-            return data.get(key, None)
+        cursor = self.connection.cursor()
+        cursor.execute("SELECT value FROM data WHERE key = ?", (key,))
+        result = cursor.fetchone()
+        return result[0] if result else None
 
     def del_data(self, key):
-        with self.lock:
-            data = self.load_data()
-            if key in data:
-                del data[key]
-                self.save_data(data)
+        with self.connection:
+            self.connection.execute("DELETE FROM data WHERE key = ?", (key,))
 
 class TCPServer:
     def __init__(self, port, message_handler):
@@ -49,7 +45,7 @@ class TCPServer:
 
     def start(self):
         self.open_server_socket()
-        signal.signal(signal.SIGINT, self.signal_handler)  # Ctrl+C sinyalini yakala
+        signal.signal(signal.SIGINT, self.signal_handler)
         while True:
             client_socket, address = self.server_socket.accept()
             self.clients.append(client_socket)
@@ -66,8 +62,7 @@ class TCPServer:
     def open_server_socket(self):
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)  # Ek satır
-        self.server_socket.bind(("", self.port))  # Tüm arayüzlerde dinle
+        self.server_socket.bind(("", self.port))
         self.server_socket.listen(5)
 
     def close_server_socket(self):
@@ -95,16 +90,6 @@ class TCPServer:
             except Exception as e:
                 print(f"Hata: {e}")
 
-    def get_host_ip(self):
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect(("8.8.8.8", 80))
-            ip = s.getsockname()[0]
-            s.close()
-        except Exception:
-            ip = "127.0.0.1"
-        return ip
-
 def message_handler(message):
     data = message.strip()[1:-1].split(",")
     parsed_data = [item.strip() for item in data]
@@ -119,6 +104,6 @@ def message_handler(message):
     elif parsed_data[0] == "DEL":
         db.del_data(parsed_data[1])
 
-db = JSONDatabase()
-server = TCPServer(4041, message_handler)
+db = SQLiteDatabase()
+server = TCPServer(4040, message_handler)
 server.start()
