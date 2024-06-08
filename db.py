@@ -35,7 +35,7 @@ class TCPServer:
         self.server_socket = None
         self.message_handler = message_handler
         self.clients = []
-        print(f"TCP Sunucu 127.0.0.1:{self.port} adresinde çalışıyor...")
+        print(f"TCP Sunucu {self.get_host_ip()}:{self.port} adresinde çalışıyor...")
 
     def start(self):
         self.open_server_socket()
@@ -58,13 +58,13 @@ class TCPServer:
     def open_server_socket(self):
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) # Portu hızla yeniden kullanmak için
-        self.server_socket.bind(("127.0.0.1", self.port))
+        self.server_socket.bind(("", self.port))  # Tüm arayüzlerde dinle
         self.server_socket.listen(5)
 
     def close_server_socket(self):
         if self.server_socket:
             self.server_socket.close()
-            print(f"TCP Sunucu 127.0.0.1:{self.port} adresinde durduruldu.")
+            print(f"TCP Sunucu {self.get_host_ip()}:{self.port} adresinde durduruldu.")
 
     def handle_client(self, client_socket):
         while True:
@@ -86,17 +86,27 @@ class TCPServer:
             except Exception as e:
                 print(f"Hata: {e}")
 
+    def get_host_ip(self):
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            ip = s.getsockname()[0]
+            s.close()
+        except Exception:
+            ip = "127.0.0.1"
+        return ip
+
 def message_handler(message):
     data = message.strip()[1:-1].split(",")
     parsed_data = [item.strip() for item in data]
     if parsed_data[0] == "SET":
         db.set_data(parsed_data[1], parsed_data[2])
-    if parsed_data[0] == "GET":
-        getted_data = db.get_data(parsed_data[1]);
+    elif parsed_data[0] == "GET":
+        getted_data = db.get_data(parsed_data[1])
         if getted_data:
-            server.send_to_all( "(" + getted_data + ")")
+            server.send_to_all(f"({getted_data})")
         else:
-            server.send_to_all( "(NULL)") 
+            server.send_to_all("(NULL)")
 
 db = JSONDatabase()
 server = TCPServer(4040, message_handler)
