@@ -36,6 +36,13 @@ class SQLiteDatabase:
         with self.connection:
             self.connection.execute("DELETE FROM data WHERE key = ?", (key,))
 
+    def print_all_data(self):
+        cursor = self.connection.cursor()
+        cursor.execute("SELECT key, value FROM data")
+        rows = cursor.fetchall()
+        for row in rows:
+            print(f"Key: {row[0]}, Value: {row[1]}")
+
 class TCPServer:
     def __init__(self, port, message_handler):
         self.port = port
@@ -90,6 +97,16 @@ class TCPServer:
             except Exception as e:
                 print(f"Hata: {e}")
 
+    def get_host_ip(self):
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            ip = s.getsockname()[0]
+            s.close()
+        except Exception:
+            ip = "127.0.0.1"
+        return ip
+
 def message_handler(message):
     data = message.strip()[1:-1].split(",")
     parsed_data = [item.strip() for item in data]
@@ -103,6 +120,8 @@ def message_handler(message):
             server.send_to_all("(NULL)")
     elif parsed_data[0] == "DEL":
         db.del_data(parsed_data[1])
+    elif parsed_data[0] == "PRINT_ALL":
+        db.print_all_data()
 
 db = SQLiteDatabase()
 server = TCPServer(4040, message_handler)
