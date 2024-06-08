@@ -35,14 +35,12 @@ class TCPServer:
         self.server_socket = None
         self.message_handler = message_handler
         self.clients = []
-        print(f"TCP Sunucu {self.get_host_ip()}:{self.port} adresinde çalışıyor...")
 
     def start(self):
         self.open_server_socket()
         signal.signal(signal.SIGINT, self.signal_handler)  # Ctrl+C sinyalini yakala
         while True:
             client_socket, address = self.server_socket.accept()
-            print(f"Bağlantı alındı: {address}")
             self.clients.append(client_socket)
             client_thread = threading.Thread(target=self.handle_client, args=(client_socket,))
             client_thread.start()
@@ -52,7 +50,6 @@ class TCPServer:
         sys.exit(0)
 
     def signal_handler(self, sig, frame):
-        print("\nCtrl+C algılandı. Sunucu durduruluyor...")
         self.stop()
 
     def open_server_socket(self):
@@ -64,7 +61,6 @@ class TCPServer:
     def close_server_socket(self):
         if self.server_socket:
             self.server_socket.close()
-            print(f"TCP Sunucu {self.get_host_ip()}:{self.port} adresinde durduruldu.")
 
     def handle_client(self, client_socket):
         while True:
@@ -74,7 +70,6 @@ class TCPServer:
                     break
                 self.message_handler(data.decode())
             except Exception as e:
-                print(f"Hata: {e}")
                 break
         client_socket.close()
         self.clients.remove(client_socket)
