@@ -120,5 +120,5 @@ def message_handler(message):
         db.del_data(parsed_data[1])
 
 db = JSONDatabase()
-server = TCPServer(4040, message_handler)
+server = TCPServer(4041, message_handler)
 server.start()
