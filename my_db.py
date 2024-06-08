@@ -36,12 +36,10 @@ class SQLiteDatabase:
         with self.connection:
             self.connection.execute("DELETE FROM data WHERE key = ?", (key,))
 
-    def print_all_data(self):
+    def get_all_data(self):
         cursor = self.connection.cursor()
         cursor.execute("SELECT key, value FROM data")
-        rows = cursor.fetchall()
-        for row in rows:
-            print(f"Key: {row[0]}, Value: {row[1]}")
+        return cursor.fetchall()
 
 class TCPServer:
     def __init__(self, port, message_handler):
@@ -121,7 +119,12 @@ def message_handler(message):
     elif parsed_data[0] == "DEL":
         db.del_data(parsed_data[1])
     elif parsed_data[0] == "PRINT_ALL":
-        db.print_all_data()
+        send_all_data()
+
+def send_all_data():
+    all_data = db.get_all_data()
+    formatted_data = "\n".join([f"({key},{value})" for key, value in all_data])
+    server.send_to_all(formatted_data)
 
 db = SQLiteDatabase()
 server = TCPServer(4040, message_handler)
