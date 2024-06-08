@@ -7,7 +7,6 @@ import sys
 class JSONDatabase:
     def __init__(self, filename="data.json"):
         self.filename = filename
-        self.lock = threading.Lock()  # Thread güvenliği için kilit
 
     def load_data(self):
         try:
@@ -22,15 +21,13 @@ class JSONDatabase:
             json.dump(data, file, indent=4)
 
     def set_data(self, key, value):
-        with self.lock:  # Dosya erişimi sırasında kilit kullan
-            data = self.load_data()
-            data[key] = value
-            self.save_data(data)
+        data = self.load_data()
+        data[key] = value
+        self.save_data(data)
 
     def get_data(self, key):
-        with self.lock:  # Dosya erişimi sırasında kilit kullan
-            data = self.load_data()
-            return data.get(key, None)
+        data = self.load_data()
+        return data.get(key, None)
 
 class TCPServer:
     def __init__(self, port, message_handler):
@@ -60,7 +57,7 @@ class TCPServer:
 
     def open_server_socket(self):
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # Portu hızla yeniden kullanmak için
+        self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) # Portu hızla yeniden kullanmak için
         self.server_socket.bind(("", self.port))  # Tüm arayüzlerde dinle
         self.server_socket.listen(5)
 
