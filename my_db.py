@@ -7,7 +7,6 @@ import sys
 class JSONDatabase:
     def __init__(self, filename="data.json"):
         self.filename = filename
-        self.lock = threading.Lock()  # Thread güvenliği için kilit
 
     def load_data(self):
         try:
@@ -22,22 +21,13 @@ class JSONDatabase:
             json.dump(data, file, indent=4)
 
     def set_data(self, key, value):
-        with self.lock:
-            data = self.load_data()
-            data[key] = value
-            self.save_data(data)
+        data = self.load_data()
+        data[key] = value
+        self.save_data(data)
 
     def get_data(self, key):
-        with self.lock:
-            data = self.load_data()
-            return data.get(key, None)
-
-    def del_data(self, key):
-        with self.lock:
-            data = self.load_data()
-            if key in data:
-                del data[key]
-                self.save_data(data)
+        data = self.load_data()
+        return data.get(key, None)
 
 class TCPServer:
     def __init__(self, port, message_handler):
@@ -112,9 +102,7 @@ def message_handler(message):
             server.send_to_all(f"({getted_data})")
         else:
             server.send_to_all("(NULL)")
-    elif parsed_data[0] == "DEL":
-        db.del_data(parsed_data[1])
 
 db = JSONDatabase()
-server = TCPServer(4041, message_handler)
+server = TCPServer(4040, message_handler)
 server.start()
