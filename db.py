@@ -109,5 +109,5 @@ def message_handler(message):
             server.send_to_all("(NULL)")
 
 db = JSONDatabase()
-server = TCPServer(4040, message_handler)
+server = TCPServer(4041, message_handler)
 server.start()
