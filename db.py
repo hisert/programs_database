@@ -7,6 +7,7 @@ import sys
 class JSONDatabase:
     def __init__(self, filename="data.json"):
         self.filename = filename
+        self.lock = threading.Lock()  # Thread güvenliği için kilit
 
     def load_data(self):
         try:
@@ -21,13 +22,15 @@ class JSONDatabase:
             json.dump(data, file, indent=4)
 
     def set_data(self, key, value):
-        data = self.load_data()
-        data[key] = value
-        self.save_data(data)
+        with self.lock:  # Dosya erişimi sırasında kilit kullan
+            data = self.load_data()
+            data[key] = value
+            self.save_data(data)
 
     def get_data(self, key):
-        data = self.load_data()
-        return data.get(key, None)
+        with self.lock:  # Dosya erişimi sırasında kilit kullan
+            data = self.load_data()
+            return data.get(key, None)
 
 class TCPServer:
     def __init__(self, port, message_handler):
@@ -57,7 +60,7 @@ class TCPServer:
 
     def open_server_socket(self):
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) # Portu hızla yeniden kullanmak için
+        self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # Portu hızla yeniden kullanmak için
         self.server_socket.bind(("", self.port))  # Tüm arayüzlerde dinle
         self.server_socket.listen(5)
 
@@ -99,15 +102,4 @@ class TCPServer:
 def message_handler(message):
     data = message.strip()[1:-1].split(",")
     parsed_data = [item.strip() for item in data]
-    if parsed_data[0] == "SET":
-        db.set_data(parsed_data[1], parsed_data[2])
-    elif parsed_data[0] == "GET":
-        getted_data = db.get_data(parsed_data[1])
-        if getted_data:
-            server.send_to_all(f"({getted_data})")
-        else:
-            server.send_to_all("(NULL)")
-
-db = JSONDatabase()
-server = TCPServer(4041, message_handler)
-server.start()
+    if parsed_dat
